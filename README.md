@@ -1,3 +1,7 @@
-# genetic_stock
+jo
 
-This is the code base for article : Find the Optimal Stock Portfolio with a Genetic Algorithm
+<call_sp500_historical_data>
+get the SP500 stock list
+get their price data
+
+
