@@ -9,8 +9,8 @@ from copy import deepcopy
 from typing import Tuple
 
 # Global config variables
-TRAINING_TICKERS = ['AMZN', 'TSLA', 'AAPL', 'GOOG', 'AMD']
-TESTING_TICKERS = ['NVDA', 'MSFT']
+TRAINING_TICKERS = ['TSM', 'INTC', 'TSM', 'QCOM', 'AVGO', 'TXN']
+TESTING_TICKERS = ['AMD', 'NVDA']
 LOWER_DATE_FILT = '2017-01-01' # Truncate to consider a fixed length of time
 NUM_STRATS = 50 # Number of strategies to try on each evolution
 NUM_EVOLVE = 250 # Number of evolutions to perform

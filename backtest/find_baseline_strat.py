@@ -10,9 +10,9 @@ STRATEGY = {
     'slow_ma_length': 20,
 }
 
-TICKER = 'MSFT'
+TICKER = 'NVDA'
 NAME = 'baseline_strat'
-LOWER_DATE_FILT = '2022-04-01'
+LOWER_DATE_FILT = '2017-01-01'
 
 
 def get_ma_cols(df: pd.DataFrame, strat: dict) -> pd.DataFrame:
