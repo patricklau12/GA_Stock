@@ -28,25 +28,26 @@ def get_ma_cols(df: pd.DataFrame, strat: dict) -> pd.DataFrame:
     
     return df
 
+# New strategy
 STRATEGY = {
-    'fast_ma_type': 'simple',   
-    'slow_ma_type': 'simple',
-    'fast_ma_field': 'Close',
+    'fast_ma_type': 'exponential',
+    'slow_ma_type': 'exponential',
+    'fast_ma_field': 'Open',
     'slow_ma_field': 'Close',
-    'fast_ma_length': 10,
-    'slow_ma_length': 20,
+    'fast_ma_length': 3,
+    'slow_ma_length': 5,
 }
 
+
 TICKER = 'NVDA'
-NAME = 'baseline_strat'
+NAME = 'optimal_strat'
 LOWER_DATE_FILT = '2017-01-01'
 
-# Read the price data and backtesting results
 price_data = pd.read_csv(f'data/{TICKER}.csv')
-backtest_data = pd.read_csv(f'{TICKER}_{NAME}_backtest.csv')
 
-# Calculate the moving average columns
+# Calculate the moving average columns with the new strategy
 price_data = get_ma_cols(price_data, STRATEGY)
+backtest_data = pd.read_csv(f'{TICKER}_{NAME}_backtest.csv')
 
 # Merge price data with backtesting results
 price_data['Date'] = pd.to_datetime(price_data['Date'])
@@ -82,14 +83,14 @@ fig.add_trace(go.Scatter(x=price_data['Date'],
                          name='Slow MA',
                          line=dict(color='orange', width=1)))
 
-# Add buy signals (green markers)
+# Add buy signals (green markers) for the new strategy
 fig.add_trace(go.Scatter(x=buy_points['Date'],
                          y=buy_points['Close'],
                          mode='markers',
                          marker=dict(symbol='circle', size=8, color='green'),
                          name='Buy'))
 
-# Add sell signals (red markers)
+# Add sell signals (red markers) for the new strategy
 fig.add_trace(go.Scatter(x=sell_points['Date'],
                          y=sell_points['Close'],
                          mode='markers',
@@ -97,16 +98,10 @@ fig.add_trace(go.Scatter(x=sell_points['Date'],
                          name='Sell'))
 
 # Customize the chart appearance
-fig.update_layout(title=f'{TICKER} - Candlestick Chart with Buy and Sell Signals',
+fig.update_layout(title=f'{TICKER} - Candlestick Chart with Buy and Sell Signals (New Strategy)',
                   xaxis_title='Date',
                   yaxis_title='Price',
                   xaxis_rangeslider_visible=False)
 
 # Display the chart
 fig.show()
-
-import numpy as np
-
-
-
-
