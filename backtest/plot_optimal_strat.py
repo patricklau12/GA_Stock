@@ -1,5 +1,6 @@
 import pandas as pd
 import plotly.graph_objects as go
+import plotly.io as pio
 
 def get_ma_cols(df: pd.DataFrame, strat: dict) -> pd.DataFrame:
     '''
@@ -105,3 +106,4 @@ fig.update_layout(title=f'{TICKER} - Candlestick Chart with Buy and Sell Signals
 
 # Display the chart
 fig.show()
+

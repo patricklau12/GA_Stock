@@ -4,17 +4,18 @@ import numba as nb
 import numpy as np
 import pandas as pd
 from copy import deepcopy
+import matplotlib.pyplot as plt
 
 # For type hinting
 from typing import Tuple
 
 # Global config variables
-TRAINING_TICKERS = ['TSM', 'INTC', 'TSM', 'QCOM', 'AVGO', 'TXN']
+TRAINING_TICKERS = ['TSM', 'INTC', 'QCOM', 'AVGO', 'TXN']
 TESTING_TICKERS = ['NVDA']
 LOWER_DATE_FILT = '2017-01-01' # Truncate to consider a fixed length of time
 NUM_STRATS = 50 # Number of strategies to try on each evolution
-NUM_EVOLVE = 250 # Number of evolutions to perform
-KEEP_PERC = 0.3 # Percentage of top models to keep on each evolution
+EPISODE = 250 # Number of evolutions to perform
+SURVIVE_RATE = 0.3 # Percentage of top models to keep on each evolution
 
 # This is how the fitness is evaluated over a single ticker, e.g. if the
 # strategy produces 20 trades, then we may take the mean percentage gained
@@ -53,8 +54,26 @@ STARTING_STRAT = {
     'slow_ma_length': 20,
 }
 
+def plot_top5_fitness(fitness_save: list):
+    '''
+    Plot the individual fitness of the top 5 strategies per evolution number, emphasizing the first 50 evolutions.
+    '''
+    top5 = [np.sort(fit[:, 1])[-5:] for fit in fitness_save]
+    top5 = np.array(top5).T
 
-def get_random_strat() -> dict:
+    for i in range(5):
+        plt.plot(top5[i], label=f'Strategy {i + 1}')
+
+    plt.xscale('log')
+    plt.xlim(1, len(fitness_save))
+    plt.xlabel('Evolution Number (log scale)')
+    plt.ylabel('Fitness of Top 5 Strategies')
+    plt.title('Fitness of Top 5 Strategies per Evolution Number (Emphasizing First 50 Evolutions)')
+    plt.legend()
+    plt.show()
+
+
+def get_random_parameter() -> dict:
     '''
     Generate a fresh random strategy by randomly selecting from the parameters
     definied in the global variables.
@@ -106,14 +125,14 @@ def perturb_strat(strat: dict) -> dict:
     return check_strat(strat)
 
 
-def breed_winning_strats(good_strats: np.array,
+def breed_winning_strats(survived_strats: np.array,
                          strats: dict) -> dict:
     '''
     Taking parameters from good/winning strategies and breed a new strategy.
     
     Parameters
     ----------
-    good_strats : np.array
+    survived_strats : np.array
         The index values of the best strategies from the evolution
     strats : dict
         The dictionary of all strategies
@@ -122,7 +141,7 @@ def breed_winning_strats(good_strats: np.array,
     new_strat = {}
     
     for param in strats['0'].keys():
-        rand_strat_idx = str(random.choice(good_strats))
+        rand_strat_idx = str(random.choice(survived_strats))
         new_strat[param] = strats[rand_strat_idx][param]
         
     return check_strat(new_strat)
@@ -350,10 +369,10 @@ def main() -> dict:
     price_data, strats, fitness, fitness_to_calc = init_ga()
     
     # This defines the number of strategies to change on each evolution
-    num_to_change = int((1-KEEP_PERC)*NUM_STRATS)
+    num_replace = int((1-SURVIVE_RATE)*NUM_STRATS)
     
     fitness_save = []
-    for evl in range(0, NUM_EVOLVE):
+    for evl in range(0, EPISODE):
         
         fitness = get_fitness(
             price_data,
@@ -362,27 +381,28 @@ def main() -> dict:
             fitness_to_calc,
         )
         
-        # Rank the strategies, and select the strategies to change
-        ranks = fitness[fitness[:, 1].argsort()]
-        good_strats = ranks[num_to_change:, 0].astype(np.int32)
-        bad_strats = ranks[:num_to_change, 0].astype(np.int32)
+
+        # Keep strategies with higher fitness value, replace the others with new strategies
+        position = fitness[fitness[:, 1].argsort()]
+        survived_strats = position[num_replace:, 0].astype(np.int32)
+        died_strats = position[:num_replace, 0].astype(np.int32)
         
-        # Split the bad strategies into 3 approx equal sets to make changes
-        splits = np.array_split(bad_strats, 3)
+        # Split the died strategies into 3 approx equal sets to make changes
+        splits = np.array_split(died_strats, 3)
         
         # Replace some bad strategies with random new ones
         for strat in splits[0]:
-            strats[str(strat)] = get_random_strat()
+            strats[str(strat)] = get_random_parameter()
             
         # Add random perturbations to some good strategies
         for strat in splits[1]:
-            rand_strat = str(random.choice(good_strats))
+            rand_strat = str(random.choice(survived_strats))
             strats[str(strat)] = perturb_strat(deepcopy(strats[rand_strat]))
             
         # Combine good strategies to make new ones
         for strat in splits[2]:
             strats[str(strat)] = breed_winning_strats(
-                good_strats,
+                survived_strats,
                 deepcopy(strats),
             )
             
@@ -390,13 +410,13 @@ def main() -> dict:
         # the fitness function on the next iteration. This saves us having to
         # recalculate the fitness function for the good strategies and save 
         # computational time
-        fitness_to_calc = bad_strats 
+        fitness_to_calc = died_strats 
         
         # Print out evolution statistics for the best five strategies, this
         # is helpful to see if the optimiser is doing the correct job (i.e.
         # is the fitness being maximised?)
         print(f'\nEvolution {evl}')
-        for count, strat in enumerate(np.flipud(good_strats[-5:])):
+        for count, strat in enumerate(np.flipud(survived_strats[-5:])):
             print(
                 str(count) + '. Strategy: ' +  str(strat) + 
                 ', ' + FITNESS_TYPE + ': ' + 
@@ -407,7 +427,7 @@ def main() -> dict:
         fitness_save.append(deepcopy(fitness))
     
     # Return the most optimal strategy after all evolutions
-    return strats[str(good_strats[-1])], fitness_save
+    return strats[str(survived_strats[-1])], fitness_save
 
 if __name__ == '__main__':
 
@@ -429,3 +449,5 @@ if __name__ == '__main__':
     print('Testing values before optimisation:', baseline)
     print('Testing values after optimisation:', optimised)
     print('\nOptimal strategy parameters:', strat)
+
+    plot_top5_fitness(fitness_save)

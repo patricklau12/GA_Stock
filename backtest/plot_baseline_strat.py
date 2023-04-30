@@ -29,12 +29,12 @@ def get_ma_cols(df: pd.DataFrame, strat: dict) -> pd.DataFrame:
     return df
 
 STRATEGY = {
-    'fast_ma_type': 'simple',   
-    'slow_ma_type': 'simple',
-    'fast_ma_field': 'Close',
+    'fast_ma_type': 'exponential',   
+    'slow_ma_type': 'exponential',
+    'fast_ma_field': 'Open',
     'slow_ma_field': 'Close',
-    'fast_ma_length': 10,
-    'slow_ma_length': 20,
+    'fast_ma_length': 21,
+    'slow_ma_length': 22,
 }
 
 TICKER = 'NVDA'
@@ -73,14 +73,14 @@ fig.add_trace(go.Scatter(x=price_data['Date'],
                          y=price_data['fast'],
                          mode='lines',
                          name='Fast MA',
-                         line=dict(color='blue', width=1)))
+                         line=dict(color='blue', width=3)))
 
 # Add slow MA curve
 fig.add_trace(go.Scatter(x=price_data['Date'],
                          y=price_data['slow'],
                          mode='lines',
                          name='Slow MA',
-                         line=dict(color='orange', width=1)))
+                         line=dict(color='orange', width=3)))
 
 # Add buy signals (green markers)
 fig.add_trace(go.Scatter(x=buy_points['Date'],
